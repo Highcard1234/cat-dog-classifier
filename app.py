@@ -8,7 +8,7 @@ import tensorflow as tf
 @st.cache_resource
 def load_model():
     if not os.path.exists("model.h5"):
-        url = "https://drive.google.com/uc?id=YOUR_FILE_ID"
+        url = "https://drive.google.com/uc?id=13EcgDb9tpTAVesfU3vofAYlST3Xuj3Gz"
         gdown.download(url, "model.h5", quiet=False)
     return tf.keras.models.load_model("model.h5")
 model = load_model()
