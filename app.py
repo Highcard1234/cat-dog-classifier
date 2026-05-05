@@ -29,6 +29,17 @@ def load_model():
 model = load_model()
 device = torch.device('cpu')
 
+# Display student information
+st.markdown("---")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Name", "Elefue Divine")
+with col2:
+    st.metric("Reg Number", "20231372805")
+with col3:
+    st.metric("Course Code", "CSC 309")
+st.markdown("---")
+
 st.title("🐶🐱 Cat vs Dog Classifier")
 st.write("Upload an image to classify")
 
