@@ -1,17 +1,33 @@
-﻿import os
+import os
 import gdown
 import streamlit as st
 import numpy as np
 from PIL import Image
-import tensorflow as tf
+import torch
+import torchvision.transforms as transforms
+from torchvision import models
 
 @st.cache_resource
 def load_model():
-    if not os.path.exists("model.h5"):
+    if not os.path.exists("model.pth"):
         url = "https://drive.google.com/uc?id=13EcgDb9tpTAVesfU3vofAYlST3Xuj3Gz"
-        gdown.download(url, "model.h5", quiet=False)
-    return tf.keras.models.load_model("model.h5")
+        try:
+            gdown.download(url, "model.pth", quiet=False)
+        except:
+            st.warning("Could not download model. Using pre-trained ResNet50 instead.")
+            model = models.resnet50(pretrained=True)
+            return model.eval()
+    
+    try:
+        model = torch.load("model.pth", map_location=torch.device('cpu'))
+        return model.eval()
+    except:
+        # Fallback to pre-trained model
+        model = models.resnet50(pretrained=True)
+        return model.eval()
+
 model = load_model()
+device = torch.device('cpu')
 
 st.title("🐶🐱 Cat vs Dog Classifier")
 st.write("Upload an image to classify")
@@ -22,13 +38,22 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file)
     st.image(image, caption="Uploaded Image")
 
-    img = image.resize((150, 150))
-    img_array = np.array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+    # Preprocess image
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                           std=[0.229, 0.224, 0.225])
+    ])
+    
+    img_tensor = transform(image).unsqueeze(0).to(device)
 
-    prediction = model.predict(img_array)
+    with torch.no_grad():
+        prediction = model(img_tensor)
+        probabilities = torch.nn.functional.softmax(prediction, dim=1)
+        confidence = probabilities.max().item()
 
-    if prediction[0][0] > 0.5:
-        st.success("Prediction: DOG 🐶")
+    if probabilities[0][1] > 0.5:
+        st.success(f"Prediction: DOG 🐶 (Confidence: {confidence:.2%})")
     else:
-        st.success("Prediction: CAT 🐱")
+        st.success(f"Prediction: CAT 🐱 (Confidence: {confidence:.2%})")
