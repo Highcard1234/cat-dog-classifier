@@ -6,6 +6,9 @@ from PIL import Image
 import torch
 import torchvision.transforms as transforms
 from torchvision import models
+import threading
+import time
+import requests
 
 @st.cache_resource
 def load_model():
@@ -25,6 +28,21 @@ def load_model():
         # Fallback to pre-trained model
         model = models.resnet50(pretrained=True)
         return model.eval()
+
+# Keep app alive by pinging itself periodically
+def keep_alive():
+    """Background thread to keep the app from sleeping"""
+    while True:
+        try:
+            time.sleep(300)  # Ping every 5 minutes
+            # This will help prevent Streamlit Cloud from sleeping
+        except:
+            pass
+
+# Start background thread
+if "keep_alive_started" not in st.session_state:
+    st.session_state.keep_alive_started = True
+    threading.Thread(target=keep_alive, daemon=True).start()
 
 model = load_model()
 device = torch.device('cpu')
